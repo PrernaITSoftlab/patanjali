@@ -194,6 +194,31 @@ function Offer({ item, type }) {
   );
 }
 
+function MarketplaceLane({ items, type, direction }) {
+  const isWarehouse = type === "warehouse";
+  return (
+    <section className={`marketplace-lane lane-${direction}`} aria-label={`${isWarehouse ? "Warehouse" : "Logistics"} highlights`}>
+      <div className="marketplace-lane-label">
+        {isWarehouse ? <Warehouse /> : <Truck />}
+        <span>
+          <b>{isWarehouse ? "Warehouse spaces" : "Logistics partners"}</b>
+          <small>{direction === "right" ? "Moving right" : "Moving left"}</small>
+        </span>
+      </div>
+      <div className="marketplace-lane-window">
+        <div className="marketplace-lane-track">
+          <div className="marketplace-lane-group">
+            {items.map((item) => <Offer key={item.id} item={item} type={type} />)}
+          </div>
+          <div className="marketplace-lane-group" aria-hidden="true" inert="">
+            {items.map((item) => <Offer key={`copy-${item.id}`} item={item} type={type} />)}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function AnimatedHeroBackground() {
   return (
     <div className="hero-background" aria-hidden="true">
@@ -281,12 +306,8 @@ export default function LandingHome() {
             </nav>
           </header>
           <div className="landing-offers">
-            <Offer item={warehouses[1]} type="warehouse" />
-            <Offer item={logistics[0]} type="logistics" />
-            <Offer item={warehouses[5]} type="warehouse" />
-            <Offer item={logistics[2]} type="logistics" />
-            <Offer item={warehouses[8]} type="warehouse" />
-            <Offer item={logistics[8]} type="logistics" />
+            <MarketplaceLane items={[warehouses[1], warehouses[5], warehouses[8]]} type="warehouse" direction="right" />
+            <MarketplaceLane items={[logistics[0], logistics[2], logistics[8]]} type="logistics" direction="left" />
           </div>
         </section>
         <section className="landing-network">
