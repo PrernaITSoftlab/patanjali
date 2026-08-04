@@ -1,0 +1,28 @@
+.add-new-warehouse-button,
+.add-new-warehouse-button:link,
+.add-new-warehouse-button:visited,
+.add-new-warehouse-button:hover,
+.add-new-warehouse-button:focus,
+.add-new-warehouse-button:active {
+  color: #fff;
+  opacity: 1;
+}
+
+.module-title .add-new-warehouse-button span,
+.module-title .add-new-warehouse-button svg,
+.module-title .add-new-warehouse-button svg path {
+  color: #fff;
+  opacity: 1;
+}
+
+.add-new-warehouse-button svg {
+  stroke: currentColor;
+}
+
+.module-title .logistics-create-action,
+.module-title .logistics-create-action:visited,
+.module-title .logistics-create-action span,
+.module-title .logistics-create-action svg {
+  color: #fff;
+  opacity: 1;
+}
