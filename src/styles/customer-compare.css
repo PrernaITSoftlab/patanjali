@@ -1,0 +1,21 @@
+.compare-card-button.active{border-color:var(--primary);background:var(--primary);color:#fff}
+.compare-card-button.active:hover{color:#fff}
+.customer-compare-page .empty-state{background:#fff}
+.compare-empty-actions{display:flex;justify-content:center;gap:10px;margin-top:20px}
+.customer-compare-table{overflow:auto;border:1px solid var(--border);border-radius:14px;background:#fff}
+.customer-compare-row{display:grid;grid-template-columns:180px repeat(3,minmax(210px,1fr));min-width:820px;border-bottom:1px solid var(--border)}
+.compare-count-2 .customer-compare-row{grid-template-columns:180px repeat(2,minmax(240px,1fr));min-width:660px}
+.customer-compare-row:last-child{border-bottom:0}
+.customer-compare-row>*{padding:16px;border-right:1px solid var(--border)}
+.customer-compare-row>*:last-child{border-right:0}
+.customer-compare-row>b{display:flex;align-items:center;color:#344054;font-size:12px}
+.customer-compare-row>span{color:#101828;font-size:13px;font-weight:600}
+.customer-compare-row.heading{align-items:stretch}
+.customer-compare-row.heading>article{display:flex;flex-direction:column;gap:8px}
+.customer-compare-row.heading img{width:100%;height:120px;border-radius:9px;object-fit:cover}
+.customer-compare-row.heading article>b{font-size:14px}
+.customer-compare-row.heading button{align-self:flex-start;padding:0;border:0;background:transparent;color:var(--primary);font-size:11px;font-weight:700}
+
+@media(max-width:600px){
+  .compare-empty-actions{flex-direction:column}
+}

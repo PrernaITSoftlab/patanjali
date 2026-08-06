@@ -1,0 +1,263 @@
+/* Unified Sidebar Navigation & Secondary Filter Layout styling */
+
+/* Desktop layout: Only filter sidebar (282px) and content (1fr) */
+.role-shell.customer-marketplace-shell {
+  grid-template-columns: 282px 1fr !important;
+}
+
+/* Collapsed Navigation Sidebar: Same 2-column layout (no nav sidebar displayed) */
+.role-shell.customer-marketplace-shell.collapsed {
+  grid-template-columns: 282px 1fr !important;
+}
+
+/* Hide primary navigation sidebar on desktop/tablet when marketplace is active */
+@media(min-width:761px) {
+  .customer-marketplace-shell .role-sidebar {
+    display: none !important;
+  }
+}
+
+.customer-marketplace-shell #customer-sidebar-middle {
+  display: flex !important;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  margin-inline: 0 !important; /* Override nested sidebar margins */
+  border-right: 1px solid #e4e7ec;
+  background: #fff;
+}
+
+.customer-sidebar-filters {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.sidebar-back {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 10px;
+  color: #526071;
+  font-size: 11px;
+}
+.sidebar-back svg {
+  width: 14px;
+}
+
+.sidebar-service-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  padding: 4px 6px 12px;
+}
+.sidebar-service-switch a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 4px;
+  border: 1px solid #dce2e9;
+  border-radius: 8px;
+  font-size: 8px;
+  text-align: center;
+}
+.sidebar-service-switch a svg {
+  width: 17px;
+}
+.sidebar-service-switch a.active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+
+.customer-sidebar-filters>header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  border-top: 1px solid #edf0f4;
+  border-bottom: 1px solid #edf0f4;
+}
+.customer-sidebar-filters>header span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #182230;
+  font-size: 10px;
+}
+.customer-sidebar-filters>header svg {
+  width: 15px;
+  color: var(--primary);
+}
+.customer-sidebar-filters>header em {
+  padding: 3px 6px;
+  border-radius: 10px;
+  background: #e6f5f3;
+  color: var(--primary-dark);
+  font-size: 7px;
+  font-style: normal;
+}
+
+.sidebar-filter-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding-bottom: 8px;
+}
+
+.sidebar-filter-group {
+  padding: 12px 10px;
+  border-bottom: 1px solid #edf0f4;
+  background: #fff;
+}
+.sidebar-filter-group h3 {
+  margin: 0 0 9px;
+  color: #182230;
+  font-size: 9px;
+}
+.sidebar-filter-group label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 7px 0;
+  color: #526071;
+  font-size: 8px;
+  line-height: 1.35;
+}
+.sidebar-filter-group label:has(input[type="number"]) {
+  align-items: stretch;
+  flex-direction: column;
+}
+.sidebar-filter-group input[type="checkbox"],
+.sidebar-filter-group input[type="radio"] {
+  accent-color: var(--primary);
+}
+.sidebar-filter-group input[type="number"],
+.sidebar-filter-group select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #dce2e9;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #182230;
+  font-size: 8px;
+  outline: 0;
+}
+.sidebar-filter-group input::placeholder {
+  color: #75839a;
+}
+.sidebar-filter-group input:focus,
+.sidebar-filter-group select:focus {
+  border-color: var(--primary);
+}
+
+.sidebar-clear-filters {
+  margin: 8px 6px 0;
+  padding: 9px;
+  border: 1px solid var(--primary);
+  border-radius: 7px;
+  background: #fff;
+  color: var(--primary);
+  font-size: 8px;
+  font-weight: 700;
+}
+.sidebar-clear-filters:hover {
+  background: var(--primary);
+  color: #fff;
+}
+
+/* Tablet Layout (761px - 1100px) */
+@media(max-width:1100px) and (min-width:761px) {
+  .role-shell.customer-marketplace-shell {
+    grid-template-columns: 282px 1fr !important;
+  }
+}
+
+/* Mobile Layout (< 760px) */
+@media(max-width:760px) {
+  .role-shell.customer-marketplace-shell {
+    display: block !important;
+  }
+  
+  #customer-sidebar-middle {
+    position: fixed;
+    top: 0;
+    right: -300px; /* Hide filters drawer off-screen on the right */
+    width: 282px;
+    height: 100vh;
+    background: #fff;
+    z-index: 150 !important; /* Needs to stack higher than mobile main layouts */
+    transition: right 0.3s ease;
+    display: flex !important;
+    flex-direction: column;
+    box-shadow: -2px 0 10px rgba(0,0,0,0.15);
+  }
+  
+  #customer-sidebar-middle.mobile-open {
+    right: 0 !important;
+  }
+
+  /* Style mobile filter header buttons */
+  .sidebar-mobile-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e4e7ec;
+    background: #f8fafc;
+  }
+  .sidebar-close-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 0;
+    color: #344054;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px 0;
+  }
+  .sidebar-close-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* Keep mobile role sidebar at normal width */
+  .customer-marketplace-shell .role-sidebar {
+    width: 262px !important;
+  }
+}
+
+/* Mobile Filters Toggle Button in Header Styling */
+@media(min-width:761px) {
+  .mobile-filter-toggle-btn {
+    display: none !important;
+  }
+}
+
+@media(max-width:760px) {
+  .mobile-filter-toggle-btn {
+    display: flex !important;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: var(--primary) !important;
+    color: #fff !important;
+    border: 0;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    min-height: 38px;
+    box-shadow: 0 2px 8px rgba(34, 184, 170, 0.2);
+  }
+  .mobile-filter-toggle-btn:hover {
+    background: var(--primary-dark) !important;
+  }
+  .mobile-filter-toggle-btn svg {
+    width: 15px;
+    height: 15px;
+  }
+}

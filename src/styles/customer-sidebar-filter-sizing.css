@@ -1,0 +1,12 @@
+.customer-sidebar-filters .sidebar-back{gap:7px;padding:10px;font-size:11px;font-weight:600}
+.customer-sidebar-filters .sidebar-service-switch a{gap:5px;padding:11px 5px;font-size:10px;font-weight:600}
+.customer-sidebar-filters>header span{gap:7px;font-size:12px}
+.customer-sidebar-filters>header em{padding:4px 7px;font-size:9px}
+.customer-sidebar-filters .sidebar-filter-group{padding:14px 12px}
+.customer-sidebar-filters .sidebar-filter-group h3{margin-bottom:11px;font-size:12px;line-height:1.35}
+.customer-sidebar-filters .sidebar-filter-group label{gap:8px;margin:9px 0;color:#c4cedb;font-size:10px;line-height:1.4}
+.customer-sidebar-filters .sidebar-filter-group input[type="checkbox"],
+.customer-sidebar-filters .sidebar-filter-group input[type="radio"]{width:15px;height:15px;flex:0 0 auto}
+.customer-sidebar-filters .sidebar-filter-group input[type="number"],
+.customer-sidebar-filters .sidebar-filter-group select{min-height:38px;padding:9px;font-size:10px}
+.customer-sidebar-filters .sidebar-clear-filters{padding:11px;font-size:10px}

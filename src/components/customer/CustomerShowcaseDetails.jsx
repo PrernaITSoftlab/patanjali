@@ -1,27 +1,910 @@
-import {useMemo,useState} from 'react';
-import {Link,useNavigate,useParams} from 'react-router-dom';
-import {ArrowUpRight,CheckCircle2,Clock3,GitCompare,Heart,MapPin,MessageSquare,Phone,Send,Share2,ShieldCheck,Star,Truck,Warehouse} from 'lucide-react';
-import toast from 'react-hot-toast';
-import Modal from '../common/Modal';
-import PublicNavbar from '../layout/PublicNavbar';
-import Footer from '../layout/Footer';
-import ShowcaseGallery from './ShowcaseGallery';
-import {logistics,warehouses} from '../../data/marketplace';
-import {seededVehicles} from '../../data/vehicleShowcase';
-import {read,write} from '../../utils/storage';
-import {useAuth} from '../../context/AuthContext';
-import '../../styles/customer-showcase.css';
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import {
+  ArrowUpRight,
+  CheckCircle2,
+  Clock3,
+  GitCompare,
+  Heart,
+  MapPin,
+  MessageSquare,
+  Phone,
+  Send,
+  Share2,
+  ShieldCheck,
+  Star,
+  Truck,
+  Warehouse,
+} from "lucide-react";
+import toast from "react-hot-toast";
+import Modal from "../common/Modal";
+import PublicNavbar from "../layout/PublicNavbar";
+import Footer from "../layout/Footer";
+import ShowcaseGallery from "./ShowcaseGallery";
+import ClassificationRating from "../common/ClassificationRating";
+import ContactAccessPanel from "./ContactAccessPanel";
+import { logistics, warehouses } from "../../data/marketplace";
+import { seededVehicles } from "../../data/vehicleShowcase";
+import { read, write } from "../../utils/storage";
+import { useAuth } from "../../context/AuthContext";
+import { saveAuthIntent } from "../../utils/authIntent";
+import "../../styles/customer-showcase.css";
 
-const galleryUrls=['https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1400&q=85','https://images.unsplash.com/photo-1565793298595-6a879b1d9492?auto=format&fit=crop&w=1400&q=85','https://images.unsplash.com/photo-1553413077-190dd305871c?auto=format&fit=crop&w=1400&q=85','https://images.unsplash.com/photo-1566576721346-d4a3b4eaeb55?auto=format&fit=crop&w=1400&q=85','https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=1400&q=85'];
-const warehouseImages=item=>galleryUrls.map((url,i)=>({url:i?url:item.image,category:['Cover Image','Warehouse Exterior','Storage Floor','Loading Area','Road Accessibility'][i],caption:[item.name,'Facility exterior and entrance','Main storage and racking floor','Loading and goods-handling area','Truck and road accessibility'][i]}));
-const providerImages=item=>galleryUrls.map((url,i)=>({url:i?url:item.image,category:['Vehicle Lineup','Company Office','Fleet Parking','Loading Operations','Safety Facilities'][i],caption:`${item.name} · ${['fleet showcase','company operations','fleet parking area','cargo handling','safety capability'][i]}`}));
-function Layout({children}){return <><PublicNavbar/>{children}<Footer/></>}
-function ContactCard({item,type,onEnquire}){const [revealed,setRevealed]=useState(false);const reveal=()=>{setRevealed(true);write('contactReveals',[...read('contactReveals',[]),{id:Date.now(),targetId:item.id,targetType:type,owner:item.owner,date:new Date().toISOString()}])};return <aside className="showcase-contact"><small>ESTIMATED STARTING PRICE</small><h2>{type==='warehouse'?`₹${item.price} ${item.unit}`:item.price}</h2><strong>Available · responds in {item.response||'18 min'}</strong>{revealed?<a href="tel:+919876543210">+91 98765 43210</a>:<button className="btn btn-primary" onClick={reveal}><Phone/> Show Contact Number</button>}<a className="btn btn-secondary" href="tel:+919876543210"><Phone/> Call Now</a><a className="btn btn-secondary" href={`https://wa.me/919876543210?text=${encodeURIComponent(`I am interested in ${item.name}`)}`} target="_blank" rel="noreferrer"><Send/> WhatsApp Enquiry</a><button className="btn btn-secondary" onClick={onEnquire}><MessageSquare/> Send Enquiry</button><div><ShieldCheck/><p>Verify final commercial terms directly with the owner.</p></div><p>Final pricing, availability, negotiation, agreement, payment and service confirmation take place directly between the customer and {type==='warehouse'?'Warehouse Owner':'Logistics Owner'}.</p></aside>}
-function EnquiryModal({target,type,onClose}){const {user}=useAuth();const submit=e=>{e.preventDefault();const form=new FormData(e.currentTarget),record={id:`ENQ-${Date.now()}`,customerId:user?.id||'guest',owner:target.owner,targetId:target.id,targetType:type,targetName:target.name,city:target.city||target.route,requiredArea:form.get('requiredArea'),goods:form.get('goods'),duration:form.get('duration'),preferredDate:form.get('preferredDate'),customerName:form.get('name'),mobile:form.get('mobile'),email:form.get('email'),budget:form.get('budget'),message:form.get('message'),preferredContact:form.get('preferredContact'),status:'Submitted',createdAt:new Date().toISOString()};write('enquiries',[record,...read('enquiries',[])]);toast.success('Enquiry sent directly to the owner');onClose()};return <Modal title={`Enquire about ${target.name}`} onClose={onClose}><form className="modal-form showcase-enquiry" onSubmit={submit}><div><label>Customer name<input name="name" required defaultValue={user?.name||''}/></label><label>Mobile number<input name="mobile" required pattern="[6-9][0-9]{9}"/></label><label>Email<input name="email" type="email" defaultValue={user?.email||''}/></label><label>Goods category<input name="goods" required/></label><label>Required area / capacity<input name="requiredArea"/></label><label>Required duration<input name="duration"/></label><label>Preferred start date<input name="preferredDate" type="date"/></label><label>Budget<input name="budget"/></label><label>Preferred contact<select name="preferredContact"><option>Phone Call</option><option>WhatsApp</option><option>Email</option></select></label></div><label>Requirement details<textarea name="message" required minLength="20"/></label><button className="btn btn-primary btn-block">Send Enquiry</button></form></Modal>}
-export function WarehouseShowcase(){const {warehouseId,id}=useParams(),item=warehouses.find(x=>String(x.id)===String(warehouseId||id))||warehouses[0],[enquiry,setEnquiry]=useState(false),images=warehouseImages(item);return <Layout><main className="customer-showcase"><div className="showcase-breadcrumb"><Link to="/customer/warehouses">Warehouses</Link> / {item.name}</div><header className="showcase-title"><div><span>{item.type} · Business Verified · Warehouse Verified</span><h1>{item.name}</h1><p><MapPin/> {item.area}, {item.city} · Approximate location</p></div><div><b><Star fill="currentColor"/> {item.rating}</b><small>{item.reviews} verified reviews</small><button><Heart/> Save</button><button><GitCompare/> Compare</button><button><Share2/> Share</button></div></header><ShowcaseGallery images={images} title={item.name}/><div className="showcase-columns"><div><section className="showcase-overview"><h2>Warehouse overview</h2><p>A professionally managed {item.type.toLowerCase()} facility designed for secure, accessible storage and direct customer-owner coordination.</p><div className="showcase-stats"><span><small>Total area</small><b>{item.totalArea.toLocaleString()} sq ft</b></span><span><small>Available area</small><b>{item.capacity}</b></span><span><small>Availability</small><b>Available</b></span><span><small>Trust Score</small><b>{item.score}/100</b></span></div></section>{[['Storage and goods',[item.type,'FMCG Products','Packaged Goods','Industrial Materials']],['Facilities and amenities',item.facilities],['Location and accessibility',[`Near ${item.city} logistics hub`,'Large-truck accessibility','Truck parking','Paved road access']],['Verification summary',['Business identity verified','Warehouse evidence current','Insurance current','Last verified 24 Jul 2026']]].map(([title,values])=><section className="showcase-section" key={title}><h2>{title}</h2><div className="showcase-list">{values.map(x=><span key={x}><CheckCircle2/>{x}</span>)}</div></section>)}<section className="showcase-section"><h2>Pricing and operating information</h2><p>Starting from ₹{item.price} {item.unit}. Minimum duration and additional handling charges are confirmed directly by the owner.</p><p>Monday–Saturday · 09:00–18:00 · Availability updated recently</p></section><section className="showcase-section"><h2>Customer reviews</h2><article className="review-sample"><Star fill="currentColor"/><b>Reliable facility and responsive team</b><p>Information matched the facility and the owner answered our questions quickly.</p><small>Verified customer · Owner response included</small></article></section></div><ContactCard item={item} type="warehouse" onEnquire={()=>setEnquiry(true)}/></div></main>{enquiry&&<EnquiryModal target={item} type="warehouse" onClose={()=>setEnquiry(false)}/>}</Layout>}
+const galleryUrls = [
+  "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1400&q=85",
+  "https://images.unsplash.com/photo-1565793298595-6a879b1d9492?auto=format&fit=crop&w=1400&q=85",
+  "https://images.unsplash.com/photo-1553413077-190dd305871c?auto=format&fit=crop&w=1400&q=85",
+  "https://images.unsplash.com/photo-1566576721346-d4a3b4eaeb55?auto=format&fit=crop&w=1400&q=85",
+  "https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=1400&q=85",
+];
+const warehouseImages = (item) =>
+  galleryUrls.map((url, i) => ({
+    url: i ? url : item.image,
+    category: [
+      "Cover Image",
+      "Warehouse Exterior",
+      "Storage Floor",
+      "Loading Area",
+      "Road Accessibility",
+    ][i],
+    caption: [
+      item.name,
+      "Facility exterior and entrance",
+      "Main storage and racking floor",
+      "Loading and goods-handling area",
+      "Truck and road accessibility",
+    ][i],
+  }));
+const providerImages = (item) =>
+  galleryUrls.map((url, i) => ({
+    url: i ? url : item.image,
+    category: [
+      "Vehicle Lineup",
+      "Company Office",
+      "Fleet Parking",
+      "Loading Operations",
+      "Safety Facilities",
+    ][i],
+    caption: `${item.name} · ${["fleet showcase", "company operations", "fleet parking area", "cargo handling", "safety capability"][i]}`,
+  }));
+function Layout({ children }) {
+  return (
+    <>
+      <PublicNavbar />
+      {children}
+      <Footer />
+    </>
+  );
+}
+function LegacyContactCard({ item, type, onEnquire, resumeAction }) {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [revealed, setRevealed] = useState(false);
+  const reveal = () => {
+    if (!user) {
+      saveAuthIntent(`${window.location.pathname}${window.location.search}`, "reveal-contact");
+      navigate("/login");
+      return;
+    }
+    navigate("/customer/subscription");
+  };
+  useEffect(() => {
+    if (["reveal-contact", "call-provider", "whatsapp-enquiry"].includes(resumeAction)) reveal();
+  }, [resumeAction]);
+  return (
+    <aside className="showcase-contact">
+      <small>ESTIMATED STARTING PRICE</small>
+      <h2>
+        {type === "warehouse" ? `₹${item.price} ${item.unit}` : item.price}
+      </h2>
+      <strong>Available · responds in {item.response || "18 min"}</strong>
+      {revealed ? (
+        <a href="tel:+919876543210">+91 98765 43210</a>
+      ) : (
+        <button className="btn btn-primary" onClick={reveal}>
+          <Phone /> Show Contact Number
+        </button>
+      )}
+      <a className="btn btn-secondary" href="tel:+919876543210">
+        <Phone /> Call Now
+      </a>
+      <a
+        className="btn btn-secondary"
+        href={`https://wa.me/919876543210?text=${encodeURIComponent(`I am interested in ${item.name}`)}`}
+        target="_blank"
+        rel="noreferrer"
+      >
+        <Send /> WhatsApp Enquiry
+      </a>
+      <button className="btn btn-secondary" onClick={onEnquire}>
+        <MessageSquare /> Send Enquiry
+      </button>
+      <div>
+        <ShieldCheck />
+        <p>Verify final commercial terms directly with the owner.</p>
+      </div>
+      <p>
+        Final pricing, availability, negotiation, agreement, payment and service
+        confirmation take place directly between the customer and{" "}
+        {type === "warehouse" ? "Warehouse Owner" : "Logistics Owner"}.
+      </p>
+    </aside>
+  );
+}
+function EnquiryModal({ target, type, onClose }) {
+  const { user } = useAuth();
+  const submit = (e) => {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget),
+      record = {
+        id: `ENQ-${Date.now()}`,
+        customerId: user?.id || "guest",
+        owner: target.owner,
+        targetId: target.id,
+        targetType: type,
+        targetName: target.name,
+        city: target.city || target.route,
+        requiredArea: form.get("requiredArea"),
+        goods: form.get("goods"),
+        duration: form.get("duration"),
+        preferredDate: form.get("preferredDate"),
+        customerName: form.get("name"),
+        mobile: form.get("mobile"),
+        email: form.get("email"),
+        budget: form.get("budget"),
+        message: form.get("message"),
+        preferredContact: form.get("preferredContact"),
+        status: "Submitted",
+        createdAt: new Date().toISOString(),
+      };
+    write("enquiries", [record, ...read("enquiries", [])]);
+    toast.success("Enquiry sent directly to the owner");
+    onClose();
+  };
+  return (
+    <Modal title={`Enquire about ${target.name}`} onClose={onClose}>
+      <form className="modal-form showcase-enquiry" onSubmit={submit}>
+        <div>
+          <label>
+            Customer name
+            <input name="name" required defaultValue={user?.name || ""} />
+          </label>
+          <label>
+            Mobile number
+            <input name="mobile" required pattern="[6-9][0-9]{9}" />
+          </label>
+          <label>
+            Email
+            <input name="email" type="email" defaultValue={user?.email || ""} />
+          </label>
+          <label>
+            Goods category
+            <input name="goods" required />
+          </label>
+          <label>
+            Required area / capacity
+            <input name="requiredArea" />
+          </label>
+          <label>
+            Required duration
+            <input name="duration" />
+          </label>
+          <label>
+            Preferred start date
+            <input name="preferredDate" type="date" />
+          </label>
+          <label>
+            Budget
+            <input name="budget" />
+          </label>
+          <label>
+            Preferred contact
+            <select name="preferredContact">
+              <option>Phone Call</option>
+              <option>WhatsApp</option>
+              <option>Email</option>
+            </select>
+          </label>
+        </div>
+        <label>
+          Requirement details
+          <textarea name="message" required minLength="20" />
+        </label>
+        <button className="btn btn-primary btn-block">Send Enquiry</button>
+      </form>
+    </Modal>
+  );
+}
 
-function FleetOverview({provider,vehicles,onEnquire}){const categories=useMemo(()=>Object.values(vehicles.reduce((summary,vehicle)=>{const current=summary[vehicle.category]||{category:vehicle.category,vehicles:[],total:0,available:0};current.vehicles.push(vehicle);current.total++;if(vehicle.availability==='Available')current.available++;summary[vehicle.category]=current;return summary},{})),[vehicles]);const available=vehicles.filter(x=>x.availability==='Available').length,verified=vehicles.filter(x=>x.status==='Approved').length,common=[...categories].sort((a,b)=>b.total-a.total)[0];return <section className="fleet-overview"><div className="section-heading"><div><small>PUBLIC FLEET DIRECTORY</small><h2>Fleet Overview</h2><p>Quantities are calculated from the provider's individual vehicle records.</p></div><Link className="btn btn-secondary" to={`/customer/logistics/${provider.id}/vehicles`}>View all vehicles</Link></div><div className="showcase-stats six"><span><small>Total vehicles</small><b>{vehicles.length}</b></span><span><small>Categories</small><b>{categories.length}</b></span><span><small>Available now</small><b>{available}</b></span><span><small>Unavailable</small><b>{vehicles.length-available}</b></span><span><small>Verified</small><b>{verified}</b></span><span><small>Most common</small><b>{common?.category||'—'}</b></span></div><div className="fleet-category-grid">{categories.map(category=>{const vehicle=category.vehicles[0];return <article key={category.category}><img src={vehicle.images[0].url} alt={category.category}/><div><span>VERIFIED VEHICLE TYPE</span><h3>{category.category}</h3><div className="category-counts"><b>{category.total}<small>Total</small></b><b>{category.available}<small>Available</small></b><b>{category.total-category.available}<small>Unavailable</small></b></div><p>{vehicle.payload} · {vehicle.bodyType}</p><div className="preview-tags">{vehicle.goods.slice(0,3).map(x=><span key={x}>{x}</span>)}</div><p>{vehicle.gps?'GPS support':''} {vehicle.refrigerated?'· Refrigerated':''}</p><strong>{vehicle.price} · {vehicle.pricingUnit}</strong><footer><Link className="btn btn-primary btn-sm" to={`/customer/logistics/${provider.id}/vehicles?category=${encodeURIComponent(category.category)}`}>View Vehicles</Link><button className="btn btn-secondary btn-sm" onClick={()=>onEnquire({...provider,name:`${provider.name} · ${category.category}`,category:category.category})}>Send Enquiry</button></footer></div></article>})}</div></section>}
-export function LogisticsShowcase(){const {providerId,id}=useParams(),item=logistics.find(x=>String(x.id)===String(providerId||id))||logistics[0],vehicles=seededVehicles.filter(x=>x.providerId===item.id),[target,setTarget]=useState(null);return <Layout><main className="customer-showcase"><div className="showcase-breadcrumb"><Link to="/customer/logistics">Logistics providers</Link> / {item.name}</div><header className="showcase-title"><div><span>Business Verified · {item.tag}</span><h1>{item.name}</h1><p><MapPin/> {item.route} · Pan-India service network</p></div><div><b><Star fill="currentColor"/> {item.rating}</b><small>{item.reviews} verified reviews</small><button><Heart/> Save</button><button><GitCompare/> Compare</button><button><Share2/> Share</button></div></header><ShowcaseGallery images={providerImages(item)} title={item.name}/><div className="showcase-columns"><div><section className="showcase-overview"><h2>Company overview</h2><p>{item.company} provides verified local, intercity and interstate transportation with direct customer coordination.</p><div className="showcase-stats"><span><small>Trust Score</small><b>{item.score}/100</b></span><span><small>Vehicle types</small><b>{new Set(vehicles.map(x=>x.category)).size}</b></span><span><small>Vehicles</small><b>{vehicles.length}</b></span><span><small>Response time</small><b>{item.response}</b></span></div></section>{[['Services offered',['Full Truckload','Part Load','Intercity Transportation','Dedicated Vehicle Service']],['Supported goods',['FMCG Products','Packaged Goods','Industrial Materials','E-commerce Products']],['Service coverage',[item.route,'Pickup and delivery cities','Local service','Interstate service']],['Verification summary',['Business identity verified','Fleet documents reviewed','Insurance support','Proof-of-delivery support']]].map(([title,values])=><section className="showcase-section" key={title}><h2>{title}</h2><div className="showcase-list">{values.map(x=><span key={x}><CheckCircle2/>{x}</span>)}</div></section>)}</div><ContactCard item={item} type="logistics" onEnquire={()=>setTarget(item)}/></div><FleetOverview provider={item} vehicles={vehicles} onEnquire={setTarget}/></main>{target&&<EnquiryModal target={target} type={target.category?'vehicle-category':'logistics-provider'} onClose={()=>setTarget(null)}/>}</Layout>}
+function GuestListingDetails({ item, type }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isWarehouse = type === "warehouse";
+  const amenities = isWarehouse ? item.facilities?.slice(0, 3) : item.vehicles?.slice(0, 3);
+  const availableArea = Number(String(item.capacity || "").replace(/[^\d.]/g, ""));
+  const totalMonthlyPrice = isWarehouse ? availableArea * item.price : 0;
+  const requireCustomer = (action, destination = "/login") => {
+    saveAuthIntent(`${location.pathname}${location.search}`, action);
+    navigate(destination, {state: {returnTo: location.pathname, action}});
+  };
+  return (
+    <Layout>
+      <main className="customer-showcase guest-listing">
+        <div className="showcase-breadcrumb"><Link to="/">Home</Link> / Limited public details</div>
+        <header className="showcase-title">
+          <div>
+            <span>{isWarehouse ? `${item.type} · Warehouse Verified` : `Logistics Provider · Business Verified`}</span>
+            <h1>{item.name}</h1>
+            <p><MapPin /> {isWarehouse ? `${item.area}, ${item.city} · Approximate location` : item.route}</p>
+          </div>
+          <div><b><Star fill="currentColor" /> {item.rating}</b><small>Customer Review Rating · {item.reviews} reviews</small></div>
+        </header>
+        <div className="guest-listing-grid">
+          <section>
+            <div className="guest-cover">
+              <img src={item.image} alt={`${item.name} cover`} />
+              <span><ShieldCheck /> Verified public photo · 1 of 5</span>
+            </div>
+            <article className="showcase-overview">
+              <ClassificationRating item={item} type={type} />
+              <p>{isWarehouse
+                ? `A verified ${item.type.toLowerCase()} facility near ${item.area}. Sign in to inspect the complete gallery, exact facility information and full reviews.`
+                : `A verified transport provider serving ${item.route}. Sign in to inspect complete fleet records, service information and full reviews.`}</p>
+              <div className="showcase-list">{amenities?.map(value => <span key={value}><CheckCircle2 />{value}</span>)}</div>
+              <div className="guest-public-facts">
+                {isWarehouse ? <>
+                  <span><small>Available rentable area</small><b>{item.capacity}</b></span>
+                  <span><small>Rate</small><b>₹{item.price} per sq. ft./month</b></span>
+                  <span><small>Total monthly price</small><b>₹{totalMonthlyPrice.toLocaleString("en-IN")}/month</b></span>
+                </> : <>
+                  <span><small>Primary vehicle</small><b>{item.vehicle}</b></span>
+                  <span><small>Payload capability</small><b>{item.payload}</b></span>
+                  <span><small>Starting rate</small><b>{item.price}</b></span>
+                </>}
+              </div>
+            </article>
+          </section>
+          <ContactAccessPanel item={item} type={type} />
+        </div>
+      </main>
+    </Layout>
+  );
+}
 
-export function ProviderVehicles(){const {providerId}=useParams(),provider=logistics.find(x=>String(x.id)===String(providerId))||logistics[0],query=new URLSearchParams(location.search).get('category'),vehicles=seededVehicles.filter(x=>x.providerId===provider.id&&(!query||x.category===query));return <Layout><main className="customer-showcase"><div className="showcase-breadcrumb"><Link to={`/customer/logistics/${provider.id}`}>{provider.name}</Link> / Vehicles</div><div className="section-heading"><div><small>INDIVIDUAL VERIFIED VEHICLES</small><h1>{query||'Complete fleet'}</h1><p>{vehicles.length} customer-facing vehicle records</p></div></div><div className="individual-vehicle-grid">{vehicles.map(vehicle=><article key={vehicle.id}><img src={vehicle.images[0].url} alt={vehicle.category}/><div><span>{vehicle.availability}</span><h2>{vehicle.manufacturer} {vehicle.model}</h2><p>{vehicle.category} · {vehicle.payload} · {vehicle.bodyType}</p><small>{vehicle.registration} · Full registration remains private</small><Link className="btn btn-primary" to={`/customer/logistics/${provider.id}/vehicles/${vehicle.id}`}>View Vehicle <ArrowUpRight/></Link></div></article>)}</div></main></Layout>}
-export function VehicleShowcase(){const {providerId,vehicleId}=useParams(),provider=logistics.find(x=>String(x.id)===String(providerId))||logistics[0],vehicle=seededVehicles.find(x=>String(x.id)===String(vehicleId))||seededVehicles.find(x=>x.providerId===provider.id),[enquiry,setEnquiry]=useState(false);return <Layout><main className="customer-showcase"><div className="showcase-breadcrumb"><Link to={`/customer/logistics/${provider.id}`}>{provider.name}</Link> / <Link to={`/customer/logistics/${provider.id}/vehicles`}>Vehicles</Link> / {vehicle.category}</div><header className="showcase-title"><div><span>{vehicle.status} · {vehicle.availability}</span><h1>{vehicle.manufacturer} {vehicle.model}</h1><p><Truck/> {vehicle.category} · {vehicle.registration}</p></div><div><b>{vehicle.price}</b><small>{vehicle.pricingUnit}</small></div></header><ShowcaseGallery images={vehicle.images} title={`${vehicle.manufacturer} ${vehicle.model}`}/><div className="showcase-columns"><div><section className="showcase-overview"><h2>Vehicle specifications</h2><div className="showcase-stats"><span><small>Payload</small><b>{vehicle.payload}</b></span><span><small>Body type</small><b>{vehicle.bodyType}</b></span><span><small>Year</small><b>{vehicle.year}</b></span><span><small>Availability</small><b>{vehicle.availability}</b></span></div></section><section className="showcase-section"><h2>Supported goods and services</h2><div className="showcase-list">{[...vehicle.goods,...vehicle.services].map(x=><span key={x}><CheckCircle2/>{x}</span>)}</div></section><section className="showcase-section"><h2>Privacy and verification</h2><p>The complete registration number and private verification documents are visible only to the provider and TrustLogix System Owner.</p></section></div><ContactCard item={{...provider,id:vehicle.id,name:`${vehicle.manufacturer} ${vehicle.model}`,price:vehicle.price}} type="vehicle" onEnquire={()=>setEnquiry(true)}/></div></main>{enquiry&&<EnquiryModal target={{...provider,id:vehicle.id,name:`${vehicle.manufacturer} ${vehicle.model}`}} type="vehicle" onClose={()=>setEnquiry(false)}/>}</Layout>}
+export function WarehouseShowcase() {
+  const { warehouseId, id } = useParams(),
+    item =
+      warehouses.find((x) => String(x.id) === String(warehouseId || id)) ||
+      warehouses[0],
+    [enquiry, setEnquiry] = useState(false),
+    images = warehouseImages(item);
+  const { user } = useAuth();
+  const location = useLocation();
+  const saveListing = () => {
+    const saved = read("saved", []);
+    if (!saved.includes(item.id)) write("saved", [...saved, item.id]);
+    toast.success("Listing saved");
+  };
+  const compareListing = () => {
+    const compared = read("compare", []);
+    if (!compared.includes(item.id)) write("compare", [...compared, item.id].slice(-3));
+    toast.success("Listing added to compare");
+  };
+  useEffect(() => {
+    const action = location.state?.resumeAction;
+    if (!action || user?.role !== "CUSTOMER") return;
+    if (action === "save-listing") {
+      const saved = read("saved", []);
+      if (!saved.includes(item.id)) write("saved", [...saved, item.id]);
+      toast.success("Listing saved");
+    }
+    if (action === "compare-listing") {
+      const compared = read("compare", []);
+      if (!compared.includes(item.id)) write("compare", [...compared, item.id].slice(-3));
+      toast.success("Listing added to compare");
+    }
+  }, [location.state, user, item.id]);
+  if (user?.role !== "CUSTOMER") return <GuestListingDetails item={item} type="warehouse" />;
+  return (
+    <Layout>
+      <main className="customer-showcase">
+        <div className="showcase-breadcrumb">
+          <Link to="/customer/warehouses">Warehouses</Link> / {item.name}
+        </div>
+        <header className="showcase-title">
+          <div>
+            <span>{item.type} · Business Verified · Warehouse Verified</span>
+            <h1>{item.name}</h1>
+            <p>
+              <MapPin /> {item.area}, {item.city} · Approximate location
+            </p>
+          </div>
+          <div>
+            <b>
+              <Star fill="currentColor" /> {item.rating}
+            </b>
+            <small>Customer Review Rating · {item.reviews} verified reviews</small>
+            <button onClick={saveListing}>
+              <Heart /> Save
+            </button>
+            <button onClick={compareListing}>
+              <GitCompare /> Compare
+            </button>
+            <button>
+              <Share2 /> Share
+            </button>
+          </div>
+        </header>
+        <ShowcaseGallery images={images} title={item.name} />
+        <div className="showcase-columns">
+          <div>
+            <section className="showcase-overview">
+              <h2>Warehouse overview</h2>
+              <p>
+                A professionally managed {item.type.toLowerCase()} facility
+                designed for secure, accessible storage and direct
+                customer-owner coordination.
+              </p>
+              <ClassificationRating item={item} type="warehouse" />
+              <div className="showcase-stats">
+                <span>
+                  <small>Total area</small>
+                  <b>{item.totalArea.toLocaleString()} sq ft</b>
+                </span>
+                <span>
+                  <small>Available area</small>
+                  <b>{item.capacity}</b>
+                </span>
+                <span>
+                  <small>Availability</small>
+                  <b>Available</b>
+                </span>
+              </div>
+            </section>
+            {[
+              [
+                "Storage and goods",
+                [
+                  item.type,
+                  "FMCG Products",
+                  "Packaged Goods",
+                  "Industrial Materials",
+                ],
+              ],
+              ["Facilities and amenities", item.facilities],
+              [
+                "Location and accessibility",
+                [
+                  `Near ${item.city} logistics hub`,
+                  "Large-truck accessibility",
+                  "Truck parking",
+                  "Paved road access",
+                ],
+              ],
+              [
+                "Verification summary",
+                [
+                  "Business identity verified",
+                  "Warehouse evidence current",
+                  "Insurance current",
+                  "Last verified 24 Jul 2026",
+                ],
+              ],
+            ].map(([title, values]) => (
+              <section className="showcase-section" key={title}>
+                <h2>{title}</h2>
+                <div className="showcase-list">
+                  {values.map((x) => (
+                    <span key={x}>
+                      <CheckCircle2 />
+                      {x}
+                    </span>
+                  ))}
+                </div>
+              </section>
+            ))}
+            <section className="showcase-section">
+              <h2>Pricing and operating information</h2>
+              <p>
+                Starting from ₹{item.price} {item.unit}. Minimum duration and
+                additional handling charges are confirmed directly by the owner.
+              </p>
+              <p>
+                Monday–Saturday · 09:00–18:00 · Availability updated recently
+              </p>
+            </section>
+            <section className="showcase-section">
+              <h2>Customer reviews</h2>
+              <article className="review-sample">
+                <Star fill="currentColor" />
+                <b>Reliable facility and responsive team</b>
+                <p>
+                  Information matched the facility and the owner answered our
+                  questions quickly.
+                </p>
+                <small>Verified customer · Owner response included</small>
+              </article>
+            </section>
+          </div>
+          <ContactAccessPanel
+            item={item}
+            type="warehouse"
+            onEnquire={() => setEnquiry(true)}
+            resumeAction={location.state?.resumeAction}
+          />
+        </div>
+      </main>
+      {enquiry && (
+        <EnquiryModal
+          target={item}
+          type="warehouse"
+          onClose={() => setEnquiry(false)}
+        />
+      )}
+    </Layout>
+  );
+}
+
+function FleetOverview({ provider, vehicles, onEnquire }) {
+  const categories = useMemo(
+    () =>
+      Object.values(
+        vehicles.reduce((summary, vehicle) => {
+          const current = summary[vehicle.category] || {
+            category: vehicle.category,
+            vehicles: [],
+            total: 0,
+            available: 0,
+          };
+          current.vehicles.push(vehicle);
+          current.total++;
+          if (vehicle.availability === "Available") current.available++;
+          summary[vehicle.category] = current;
+          return summary;
+        }, {}),
+      ),
+    [vehicles],
+  );
+  const available = vehicles.filter(
+      (x) => x.availability === "Available",
+    ).length,
+    verified = vehicles.filter((x) => x.status === "Approved").length,
+    common = [...categories].sort((a, b) => b.total - a.total)[0];
+  return (
+    <section className="fleet-overview">
+      <div className="section-heading">
+        <div>
+          <small>PUBLIC FLEET DIRECTORY</small>
+          <h2>Fleet Overview</h2>
+          <p>
+            Quantities are calculated from the provider's individual vehicle
+            records.
+          </p>
+        </div>
+        <Link
+          className="btn btn-secondary"
+          to={`/customer/logistics/${provider.id}/vehicles`}
+        >
+          View all vehicles
+        </Link>
+      </div>
+      <div className="showcase-stats six">
+        <span>
+          <small>Total vehicles</small>
+          <b>{vehicles.length}</b>
+        </span>
+        <span>
+          <small>Categories</small>
+          <b>{categories.length}</b>
+        </span>
+        <span>
+          <small>Available now</small>
+          <b>{available}</b>
+        </span>
+        <span>
+          <small>Unavailable</small>
+          <b>{vehicles.length - available}</b>
+        </span>
+        <span>
+          <small>Verified</small>
+          <b>{verified}</b>
+        </span>
+        <span>
+          <small>Most common</small>
+          <b>{common?.category || "—"}</b>
+        </span>
+      </div>
+      <div className="fleet-category-grid">
+        {categories.map((category) => {
+          const vehicle = category.vehicles[0];
+          return (
+            <article key={category.category}>
+              <img src={vehicle.images[0].url} alt={category.category} />
+              <div>
+                <span>VERIFIED VEHICLE TYPE</span>
+                <h3>{category.category}</h3>
+                <div className="category-counts">
+                  <b>
+                    {category.total}
+                    <small>Total</small>
+                  </b>
+                  <b>
+                    {category.available}
+                    <small>Available</small>
+                  </b>
+                  <b>
+                    {category.total - category.available}
+                    <small>Unavailable</small>
+                  </b>
+                </div>
+                <p>
+                  {vehicle.payload} · {vehicle.bodyType}
+                </p>
+                <div className="preview-tags">
+                  {vehicle.goods.slice(0, 3).map((x) => (
+                    <span key={x}>{x}</span>
+                  ))}
+                </div>
+                <p>
+                  {vehicle.gps ? "GPS support" : ""}{" "}
+                  {vehicle.refrigerated ? "· Refrigerated" : ""}
+                </p>
+                <strong>
+                  {vehicle.price} · {vehicle.pricingUnit}
+                </strong>
+                <footer>
+                  <Link
+                    className="btn btn-primary btn-sm"
+                    to={`/customer/logistics/${provider.id}/vehicles?category=${encodeURIComponent(category.category)}`}
+                  >
+                    View Vehicles
+                  </Link>
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() =>
+                      onEnquire({
+                        ...provider,
+                        name: `${provider.name} · ${category.category}`,
+                        category: category.category,
+                      })
+                    }
+                  >
+                    Send Enquiry
+                  </button>
+                </footer>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+export function LogisticsShowcase() {
+  const { providerId, id } = useParams(),
+    item =
+      logistics.find((x) => String(x.id) === String(providerId || id)) ||
+      logistics[0],
+    vehicles = seededVehicles.filter((x) => x.providerId === item.id),
+    [target, setTarget] = useState(null);
+  const { user } = useAuth();
+  const location = useLocation();
+  const saveListing = () => {
+    const saved = read("saved", []);
+    if (!saved.includes(item.id)) write("saved", [...saved, item.id]);
+    toast.success("Listing saved");
+  };
+  const compareListing = () => {
+    const compared = read("compare", []);
+    if (!compared.includes(item.id)) write("compare", [...compared, item.id].slice(-3));
+    toast.success("Listing added to compare");
+  };
+  useEffect(() => {
+    const action = location.state?.resumeAction;
+    if (!action || user?.role !== "CUSTOMER") return;
+    if (action === "save-listing") {
+      const saved = read("saved", []);
+      if (!saved.includes(item.id)) write("saved", [...saved, item.id]);
+      toast.success("Listing saved");
+    }
+    if (action === "compare-listing") {
+      const compared = read("compare", []);
+      if (!compared.includes(item.id)) write("compare", [...compared, item.id].slice(-3));
+      toast.success("Listing added to compare");
+    }
+    if (action === "send-enquiry") setTarget(item);
+  }, [location.state, user, item]);
+  if (user?.role !== "CUSTOMER") return <GuestListingDetails item={item} type="logistics" />;
+  return (
+    <Layout>
+      <main className="customer-showcase">
+        <div className="showcase-breadcrumb">
+          <Link to="/customer/logistics">Logistics providers</Link> /{" "}
+          {item.name}
+        </div>
+        <header className="showcase-title">
+          <div>
+            <span>Business Verified · {item.tag}</span>
+            <h1>{item.name}</h1>
+            <p>
+              <MapPin /> {item.route} · Pan-India service network
+            </p>
+          </div>
+          <div>
+            <b>
+              <Star fill="currentColor" /> {item.rating}
+            </b>
+            <small>Customer Review Rating · {item.reviews} verified reviews</small>
+            <button onClick={saveListing}>
+              <Heart /> Save
+            </button>
+            <button onClick={compareListing}>
+              <GitCompare /> Compare
+            </button>
+            <button>
+              <Share2 /> Share
+            </button>
+          </div>
+        </header>
+        <ShowcaseGallery images={providerImages(item)} title={item.name} />
+        <div className="showcase-columns">
+          <div>
+            <section className="showcase-overview">
+              <h2>Company overview</h2>
+              <p>
+                {item.company} provides verified local, intercity and interstate
+                transportation with direct customer coordination.
+              </p>
+              <ClassificationRating item={item} type="logistics" />
+              <div className="showcase-stats">
+                <span>
+                  <small>Vehicle types</small>
+                  <b>{new Set(vehicles.map((x) => x.category)).size}</b>
+                </span>
+                <span>
+                  <small>Vehicles</small>
+                  <b>{vehicles.length}</b>
+                </span>
+                <span>
+                  <small>Response time</small>
+                  <b>{item.response}</b>
+                </span>
+              </div>
+            </section>
+            {[
+              [
+                "Services offered",
+                [
+                  "Full Truckload",
+                  "Part Load",
+                  "Intercity Transportation",
+                  "Dedicated Vehicle Service",
+                ],
+              ],
+              [
+                "Supported goods",
+                [
+                  "FMCG Products",
+                  "Packaged Goods",
+                  "Industrial Materials",
+                  "E-commerce Products",
+                ],
+              ],
+              [
+                "Service coverage",
+                [
+                  item.route,
+                  "Pickup and delivery cities",
+                  "Local service",
+                  "Interstate service",
+                ],
+              ],
+              [
+                "Verification summary",
+                [
+                  "Business identity verified",
+                  "Fleet documents reviewed",
+                  "Insurance support",
+                  "Proof-of-delivery support",
+                ],
+              ],
+            ].map(([title, values]) => (
+              <section className="showcase-section" key={title}>
+                <h2>{title}</h2>
+                <div className="showcase-list">
+                  {values.map((x) => (
+                    <span key={x}>
+                      <CheckCircle2 />
+                      {x}
+                    </span>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+          <ContactAccessPanel
+            item={item}
+            type="logistics"
+            onEnquire={() => setTarget(item)}
+            resumeAction={location.state?.resumeAction}
+          />
+        </div>
+        <FleetOverview
+          provider={item}
+          vehicles={vehicles}
+          onEnquire={setTarget}
+        />
+      </main>
+      {target && (
+        <EnquiryModal
+          target={target}
+          type={target.category ? "vehicle-category" : "logistics-provider"}
+          onClose={() => setTarget(null)}
+        />
+      )}
+    </Layout>
+  );
+}
+
+export function ProviderVehicles() {
+  const { providerId } = useParams(),
+    provider =
+      logistics.find((x) => String(x.id) === String(providerId)) ||
+      logistics[0],
+    query = new URLSearchParams(location.search).get("category"),
+    vehicles = seededVehicles.filter(
+      (x) => x.providerId === provider.id && (!query || x.category === query),
+    );
+  return (
+    <Layout>
+      <main className="customer-showcase">
+        <div className="showcase-breadcrumb">
+          <Link to={`/customer/logistics/${provider.id}`}>{provider.name}</Link>{" "}
+          / Vehicles
+        </div>
+        <div className="section-heading">
+          <div>
+            <small>INDIVIDUAL VERIFIED VEHICLES</small>
+            <h1>{query || "Complete fleet"}</h1>
+            <p>{vehicles.length} customer-facing vehicle records</p>
+          </div>
+        </div>
+        <div className="individual-vehicle-grid">
+          {vehicles.map((vehicle) => (
+            <article key={vehicle.id}>
+              <img src={vehicle.images[0].url} alt={vehicle.category} />
+              <div>
+                <span>{vehicle.availability}</span>
+                <h2>
+                  {vehicle.manufacturer} {vehicle.model}
+                </h2>
+                <p>
+                  {vehicle.category} · {vehicle.payload} · {vehicle.bodyType}
+                </p>
+                <small>
+                  {vehicle.registration} · Full registration remains private
+                </small>
+                <Link
+                  className="btn btn-primary"
+                  to={`/customer/logistics/${provider.id}/vehicles/${vehicle.id}`}
+                >
+                  View Vehicle <ArrowUpRight />
+                </Link>
+              </div>
+            </article>
+          ))}
+        </div>
+      </main>
+    </Layout>
+  );
+}
+export function VehicleShowcase() {
+  const { providerId, vehicleId } = useParams(),
+    provider =
+      logistics.find((x) => String(x.id) === String(providerId)) ||
+      logistics[0],
+    vehicle =
+      seededVehicles.find((x) => String(x.id) === String(vehicleId)) ||
+      seededVehicles.find((x) => x.providerId === provider.id),
+    [enquiry, setEnquiry] = useState(false);
+  return (
+    <Layout>
+      <main className="customer-showcase">
+        <div className="showcase-breadcrumb">
+          <Link to={`/customer/logistics/${provider.id}`}>{provider.name}</Link>{" "}
+          /{" "}
+          <Link to={`/customer/logistics/${provider.id}/vehicles`}>
+            Vehicles
+          </Link>{" "}
+          / {vehicle.category}
+        </div>
+        <header className="showcase-title">
+          <div>
+            <span>
+              {vehicle.status} · {vehicle.availability}
+            </span>
+            <h1>
+              {vehicle.manufacturer} {vehicle.model}
+            </h1>
+            <p>
+              <Truck /> {vehicle.category} · {vehicle.registration}
+            </p>
+          </div>
+          <div>
+            <b>{vehicle.price}</b>
+            <small>{vehicle.pricingUnit}</small>
+          </div>
+        </header>
+        <ShowcaseGallery
+          images={vehicle.images}
+          title={`${vehicle.manufacturer} ${vehicle.model}`}
+        />
+        <div className="showcase-columns">
+          <div>
+            <section className="showcase-overview">
+              <h2>Vehicle specifications</h2>
+              <div className="showcase-stats">
+                <span>
+                  <small>Payload</small>
+                  <b>{vehicle.payload}</b>
+                </span>
+                <span>
+                  <small>Body type</small>
+                  <b>{vehicle.bodyType}</b>
+                </span>
+                <span>
+                  <small>Year</small>
+                  <b>{vehicle.year}</b>
+                </span>
+                <span>
+                  <small>Availability</small>
+                  <b>{vehicle.availability}</b>
+                </span>
+              </div>
+            </section>
+            <section className="showcase-section">
+              <h2>Supported goods and services</h2>
+              <div className="showcase-list">
+                {[...vehicle.goods, ...vehicle.services].map((x) => (
+                  <span key={x}>
+                    <CheckCircle2 />
+                    {x}
+                  </span>
+                ))}
+              </div>
+            </section>
+            <section className="showcase-section">
+              <h2>Privacy and verification</h2>
+              <p>
+                The complete registration number and private verification
+                documents are visible only to the provider and TrustLogix System
+                Owner.
+              </p>
+            </section>
+          </div>
+          <ContactAccessPanel
+            item={{
+              ...provider,
+              id: vehicle.id,
+              name: `${vehicle.manufacturer} ${vehicle.model}`,
+              price: vehicle.price,
+            }}
+            type="vehicle"
+            onEnquire={() => setEnquiry(true)}
+          />
+        </div>
+      </main>
+      {enquiry && (
+        <EnquiryModal
+          target={{
+            ...provider,
+            id: vehicle.id,
+            name: `${vehicle.manufacturer} ${vehicle.model}`,
+          }}
+          type="vehicle"
+          onClose={() => setEnquiry(false)}
+        />
+      )}
+    </Layout>
+  );
+}

@@ -1,0 +1,54 @@
+.logo {
+  gap: 9px;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+}
+
+.logo .logo-mark {
+  position: relative;
+  display: block;
+  width: 42px;
+  height: 42px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid rgba(15, 118, 110, 0.14);
+  border-radius: 11px;
+  box-shadow: 0 4px 12px rgba(4, 87, 58, 0.1);
+}
+
+.logo-mark img {
+  position: absolute;
+  top: -5px;
+  left: -11px;
+  width: 64px;
+  max-width: none;
+  height: 64px;
+  object-fit: cover;
+}
+
+.logo b { color: #07944f; }
+.logo b strong { color: #024b38; }
+.logo-light b,
+.logo-light b strong { color: #fff; }
+.logo-light .logo-mark {
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: none;
+}
+
+/* Authentication artwork uses a pale background, so keep the wordmark dark. */
+.auth-visual .logo-light b { color: #07944f; }
+.auth-visual .logo-light b strong { color: #024b38; }
+.auth-visual .logo-light .logo-mark {
+  border-color: rgba(15, 118, 110, 0.14);
+  box-shadow: 0 4px 12px rgba(4, 87, 58, 0.1);
+}
+
+.landing-page .btn-primary {
+  background: linear-gradient(135deg, #064f3b, #0e9f63);
+  box-shadow: 0 8px 20px rgba(4, 87, 58, 0.2);
+}
+
+.landing-page .btn-primary:hover {
+  box-shadow: 0 12px 25px rgba(4, 87, 58, 0.28);
+}

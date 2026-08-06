@@ -1,0 +1,54 @@
+/* Desktop dashboards: sidebar and workspace scroll independently. */
+@media(min-width:761px){
+  .role-shell{
+    height:100vh;
+    min-height:0;
+    overflow:hidden;
+  }
+  .role-sidebar{
+    position:relative;
+    height:100vh;
+    min-height:0;
+    overflow:hidden;
+  }
+  .role-sidebar nav{
+    flex:1;
+    min-height:0;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    scrollbar-gutter:stable;
+  }
+  .role-main{
+    height:100vh;
+    min-height:0;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    scrollbar-gutter:stable;
+  }
+  .role-header{
+    position:sticky;
+    top:0;
+    z-index:60;
+  }
+  .customer-marketplace-shell #customer-sidebar-middle{
+    flex:1;
+    min-height:0;
+    overflow:hidden;
+  }
+  .customer-marketplace-shell .sidebar-filter-scroll{
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    scrollbar-gutter:stable;
+  }
+  .results-layout>.filters{
+    max-height:calc(100vh - 112px);
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    scrollbar-gutter:stable;
+  }
+}
+
+@media(max-width:760px){
+  .role-shell{height:auto;min-height:100vh;overflow:visible}
+  .role-main{height:auto;overflow:visible}
+}

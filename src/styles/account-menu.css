@@ -1,0 +1,19 @@
+.role-header-actions{position:relative}
+.role-account{position:relative}
+.role-account-trigger{display:flex;align-items:center;gap:5px;padding:0;border:0;background:transparent;color:#667085;cursor:pointer}
+.role-account-trigger>svg{width:15px}
+.role-account-menu{position:absolute;top:48px;right:0;z-index:120;width:230px;padding:8px;border:1px solid var(--border);border-radius:11px;background:#fff;box-shadow:0 14px 36px rgba(16,24,40,.18)}
+.role-account-menu>div{display:flex;flex-direction:column;padding:9px 10px 12px;border-bottom:1px solid var(--border)}
+.role-account-menu>div b{font-size:13px;color:#101828}
+.role-account-menu>div small{overflow:hidden;color:#667085;font-size:10px;text-overflow:ellipsis}
+.role-account-menu>a,.role-account-menu>button{display:flex;align-items:center;gap:9px;width:100%;padding:10px;border:0;border-radius:7px;background:#fff;color:#344054;font-size:12px;font-weight:600;text-align:left;cursor:pointer}
+.role-account-menu>a:hover,.role-account-menu>button:hover{background:#f2f4f7;color:var(--primary)}
+.role-account-menu svg{width:17px}
+.role-logout-button{display:flex;align-items:center;gap:7px;min-height:40px;padding:0 13px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;color:#344054;font-size:12px;font-weight:700;cursor:pointer}
+.role-logout-button svg{width:17px}
+.role-logout-button:hover{border-color:var(--primary);background:#fff5f5;color:var(--primary)}
+
+@media(max-width:760px){
+  .role-account-menu{position:fixed;top:82px;right:14px;width:min(230px,calc(100vw - 28px))}
+  .role-logout-button{width:40px;padding:0;justify-content:center;font-size:0}
+}

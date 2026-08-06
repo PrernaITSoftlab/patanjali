@@ -1,0 +1,5 @@
+.classification-rating{background:#fffaf0;border:1px solid #f2dfb7;border-radius:10px;padding:14px;margin:14px 0;display:flex;flex-direction:column;gap:4px}
+.classification-rating>div{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.classification-rating b{font-size:12px}.classification-rating strong{font-size:14px}.classification-rating small{font-size:10px;color:var(--muted)}
+.classification-stars{color:#e49a16;font-size:18px;letter-spacing:1px;white-space:nowrap}.classification-stars i{color:#d8dce3;font-style:normal}
+.classification-rating.compact{padding:10px;margin:0}.classification-rating.compact b{font-size:13px}.classification-rating.compact .classification-stars{font-size:17px}.classification-rating.compact strong{font-size:14px}.classification-rating.compact small{font-size:11px}

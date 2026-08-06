@@ -383,23 +383,49 @@ function LegacyHome() {
 
 function Results({ type }) {
   const items = type === "warehouse" ? warehouses : logistics;
+  const routeLocation = useLocation();
   const [sort, setSort] = useState("recommended");
   const [query, setQuery] = useState("");
   const [compare, setCompare] = useState(() => read("compare", []));
+  const emptyFilters = {location:"",category:"",minCapacity:"",standard:"",classification:"",rating:"",amenity:"",maxPrice:"",verified:false,nonVerified:false,pro:false,premium:false,pickup:"",destination:"",vehicle:"",quantity:"",service:"",gps:false,refrigerated:false,maxResponse:""};
+  const [filters,setFilters]=useState(() => {
+    const params = new URLSearchParams(routeLocation.search);
+    return {
+      ...emptyFilters,
+      [type === "warehouse" ? "location" : "pickup"]:
+        (type === "warehouse" ? params.get("city") : null) || params.get("location") || "",
+      classification: params.get("classification") || "",
+      rating: params.get("rating") || "",
+      maxPrice: params.get("budget") || "",
+      verified: params.get("verified") === "true",
+      nonVerified: params.get("nonVerified") === "true",
+    };
+  });
+  const updateFilter=(key,value)=>setFilters(current=>({...current,[key]:value}));
   const filtered = useMemo(
-    () =>
-      items
+    () => {
+      const hasStatusFilter = filters.verified || filters.nonVerified;
+      return items
         .filter((x) =>
           JSON.stringify(x).toLowerCase().includes(query.toLowerCase()),
         )
+        .filter((x) => {
+          const matchesStatus = !hasStatusFilter ||
+            (filters.verified && /^verified$/i.test(x.tag || "")) ||
+            (filters.nonVerified && /^non-verified$/i.test(x.tag || ""));
+          return (!filters.classification || getClassification(x, type).stars >= Number(filters.classification)) &&
+            matchesStatus;
+        })
+        .filter(x=>{if(type==="warehouse"){const capacity=Number(String(x.capacity).replace(/[^\d.]/g,""));return (!filters.location||`${x.city} ${x.area}`.toLowerCase().includes(filters.location.toLowerCase()))&&(!filters.category||x.type===filters.category)&&(!filters.minCapacity||capacity>=Number(filters.minCapacity))&&(!filters.standard||x.grade.startsWith(filters.standard))&&(!filters.rating||x.rating>=Number(filters.rating))&&(!filters.amenity||x.facilities?.includes(filters.amenity))&&(!filters.maxPrice||x.price<=Number(filters.maxPrice));}const route=x.route.toLowerCase(),rate=Number(String(x.price).replace(/[^\d.]/g,"")),response=Number(String(x.response).replace(/[^\d.]/g,""));return (!filters.pickup||route.includes(filters.pickup.toLowerCase()))&&(!filters.destination||route.includes(filters.destination.toLowerCase()))&&(!filters.vehicle||x.vehicles?.includes(filters.vehicle))&&(!filters.quantity||x.fleet>=Number(filters.quantity))&&(!filters.service||(filters.service==="local"?route.includes("local"):filters.service==="national"?route.includes("pan india"):route.includes("→")))&&(!filters.rating||x.rating>=Number(filters.rating))&&(!filters.gps||x.gps)&&(!filters.refrigerated||x.vehicles?.some(v=>v.includes("Refrigerated")))&&(!filters.maxResponse||response<=Number(filters.maxResponse))&&(!filters.maxPrice||rate<=Number(filters.maxPrice));})
         .sort((a, b) =>
           sort === "rating"
             ? b.rating - a.rating
             : sort === "price"
               ? (a.price || 0) - (b.price || 0)
               : b.score - a.score,
-        ),
-    [items, query, sort],
+        );
+    },
+    [items, query, sort, filters, type],
   );
   const add = (item) => {
     const n = compare.includes(item.id)
@@ -440,35 +466,29 @@ function Results({ type }) {
             <b>
               <SlidersHorizontal /> Filters
             </b>
-            <button>Clear all</button>
+            <button onClick={()=>setFilters(emptyFilters)}>Clear all</button>
           </div>
-          {[
-            "Location",
-            "Trust & verification",
-            "Pricing",
-            "Customer rating",
-            "Facilities",
-            "Capacity & availability",
-          ].map((x, i) => (
-            <details open={i < 3} key={x}>
-              <summary>
-                {x}
-                <ChevronRight />
-              </summary>
-              <label>
-                <input type="checkbox" />{" "}
-                {i === 0 ? "Near logistics hub" : "Platform verified"}
-              </label>
-              <label>
-                <input type="checkbox" />{" "}
-                {i === 1 ? "Facility / fleet verified" : "Fast response"}
-              </label>
-              <label>
-                <input type="checkbox" />{" "}
-                {i === 2 ? "Pro Partner" : "4.5+ rating"}
-              </label>
-            </details>
-          ))}
+          {type==="warehouse"?<>
+            <details open><summary>Location<ChevronRight/></summary><input aria-label="Warehouse location" placeholder="City, area or hub" value={filters.location} onChange={e=>updateFilter("location",e.target.value)}/></details>
+            <details open><summary>Warehouse type<ChevronRight/></summary><label><input type="radio" name="warehouse-type" checked={!filters.category} onChange={()=>updateFilter("category","")}/>All warehouse types</label>{[...new Set(warehouses.map(x=>x.type))].map(x=><label key={x}><input type="radio" name="warehouse-type" checked={filters.category===x} onChange={()=>updateFilter("category",x)}/>{x}</label>)}</details>
+            <details open><summary>Required area<ChevronRight/></summary><input type="number" min="0" placeholder="Minimum sq. ft." value={filters.minCapacity} onChange={e=>updateFilter("minCapacity",e.target.value)}/></details>
+            <details open><summary>Facility Standard<ChevronRight/></summary>{[["","All standards"],["A","Grade A / A+"],["B","Grade B / B+"]].map(([value,label])=><label key={label}><input type="radio" name="facility-standard" checked={filters.standard===value} onChange={()=>updateFilter("standard",value)}/>{label}</label>)}</details>
+            <details open><summary>Customer rating<ChevronRight/></summary>{[["","All ratings"],["4","4.0 & above"],["4.5","4.5 & above"],["4.8","4.8 & above"]].map(([value,label])=><label key={label}><input type="radio" name="warehouse-rating" checked={filters.rating===value} onChange={()=>updateFilter("rating",value)}/>{label}</label>)}</details>
+            <details open><summary>Storage amenities<ChevronRight/></summary><select value={filters.amenity} onChange={e=>updateFilter("amenity",e.target.value)}><option value="">Any amenity</option>{[...new Set(warehouses.flatMap(x=>x.facilities||[]))].sort().map(x=><option key={x}>{x}</option>)}</select></details>
+            <details open><summary>Monthly pricing<ChevronRight/></summary><input type="number" min="0" placeholder="Maximum rate / sq. ft." value={filters.maxPrice} onChange={e=>updateFilter("maxPrice",e.target.value)}/></details>
+            <details open><summary>Verification & status<ChevronRight/></summary><label><input type="checkbox" checked={filters.verified} onChange={e=>updateFilter("verified",e.target.checked)}/> Verified</label><label><input type="checkbox" checked={filters.nonVerified} onChange={e=>updateFilter("nonVerified",e.target.checked)}/> Non-verified</label></details>
+          </>:<>
+            <details open><summary>Pickup location<ChevronRight/></summary><input placeholder="Pickup city" value={filters.pickup} onChange={e=>updateFilter("pickup",e.target.value)}/></details>
+            <details open><summary>Destination<ChevronRight/></summary><input placeholder="Delivery city" value={filters.destination} onChange={e=>updateFilter("destination",e.target.value)}/></details>
+            <details open><summary>Vehicle category<ChevronRight/></summary><select value={filters.vehicle} onChange={e=>updateFilter("vehicle",e.target.value)}><option value="">All vehicle types</option>{[...new Set(logistics.flatMap(x=>x.vehicles||[]))].sort().map(x=><option key={x}>{x}</option>)}</select></details>
+            <details open><summary>Required quantity<ChevronRight/></summary><input type="number" min="1" placeholder="Number of vehicles" value={filters.quantity} onChange={e=>updateFilter("quantity",e.target.value)}/></details>
+            <details open><summary>Service type<ChevronRight/></summary>{[["","All services"],["local","Local"],["intercity","Intercity"],["national","Pan-India"]].map(([value,label])=><label key={label}><input type="radio" name="logistics-service" checked={filters.service===value} onChange={()=>updateFilter("service",value)}/>{label}</label>)}</details>
+            <details open><summary>Customer rating<ChevronRight/></summary><select value={filters.rating} onChange={e=>updateFilter("rating",e.target.value)}><option value="">All ratings</option><option value="4">4.0+</option><option value="4.5">4.5+</option><option value="4.8">4.8+</option></select></details>
+            <details open><summary>Verification & status<ChevronRight/></summary><label><input type="checkbox" checked={filters.verified} onChange={e=>updateFilter("verified",e.target.checked)}/> Verified</label><label><input type="checkbox" checked={filters.nonVerified} onChange={e=>updateFilter("nonVerified",e.target.checked)}/> Non-verified</label></details>
+            <details open><summary>Fleet capabilities<ChevronRight/></summary><label><input type="checkbox" checked={filters.gps} onChange={e=>updateFilter("gps",e.target.checked)}/> GPS tracking</label><label><input type="checkbox" checked={filters.refrigerated} onChange={e=>updateFilter("refrigerated",e.target.checked)}/> Refrigerated vehicles</label></details>
+            <details open><summary>Availability freshness<ChevronRight/></summary><select value={filters.maxResponse} onChange={e=>updateFilter("maxResponse",e.target.value)}><option value="">Any response time</option><option value="10">Within 10 minutes</option><option value="20">Within 20 minutes</option><option value="30">Within 30 minutes</option></select></details>
+            <details open><summary>Pricing<ChevronRight/></summary><input type="number" min="0" placeholder="Maximum rate / km" value={filters.maxPrice} onChange={e=>updateFilter("maxPrice",e.target.value)}/></details>
+          </>}
         </aside>
         <div className="results-main">
           <div className="results-toolbar">
